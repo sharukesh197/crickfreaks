@@ -1,0 +1,6 @@
+{
+  "name": "Crease Clash",
+  "description": "Skill-based 3D browser cricket game with a locked behind-the-bowler camera, authentic pitch and wicket proportions, and deterministic cricket physics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

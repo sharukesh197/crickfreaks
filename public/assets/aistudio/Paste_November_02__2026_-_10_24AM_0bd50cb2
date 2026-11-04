@@ -1,0 +1,1809 @@
+CREASE CLASH
+
+Product Requirements Document + Game Design Document + Visual Asset Prompt Bible
+
+Document status: Foundational design specification
+Working title: Crease Clash (provisional; branding not locked)
+Product type: Mobile-first, browser-playable, real-time multiplayer cricket game
+Primary match format: 1v1, five overs per innings
+Primary camera: Fixed, elevated behind-the-bowler view
+Scope of this document: Design, rules, gameplay systems, architecture, art direction, asset prompts and acceptance criteria. It is not an implementation or code-generation brief.
+
+Contents
+
+Executive summary and product vision
+
+Audience, platform and product requirements
+
+Camera, framing and visual direction
+
+Match structure and game flow
+
+Core simulation architecture
+
+Ball physics specification
+
+Bowling design
+
+Batting design and shot library
+
+Fielding, catching and wicketkeeping
+
+Running between wickets
+
+Wickets, extras and rules
+
+Player models, attributes and animation
+
+UI/UX specification
+
+Audio and haptics
+
+Modes, progression and competitive structure
+
+Technical architecture recommendation
+
+Asset production bible and generation prompts
+
+Rules, controls and player education
+
+Telemetry and balancing
+
+Acceptance criteria
+
+Risks and mitigations
+
+Recommended production order
+
+Master game design + world + asset generation prompt and decision register
+
+
+0. Executive summary
+
+Crease Clash is a skill-led cricket game for mobile and desktop browsers. It should feel like cricket rather than a sequence of arcade button outcomes. A delivery is created by a bowler's release, travels through a readable three-dimensional space, bounces and moves according to its physical properties, and is met by a batter's chosen footwork and bat swing. The resulting contact, miss, edge, shot direction, elevation, catch chance, run opportunity and dismissal must arise from the interaction of those systems.
+
+The game uses a lightweight, polished 2.5D/3D presentation. The pitch, grass, ball, stumps, bails, boundary and field should read as a convincing cricket ground. Player models should be original and economical rather than photorealistic or copied from the supplied reference. The game must run well in a mobile browser and remain legible on a small landscape screen.
+
+Core promise: every ball is a contest of information, anticipation, decision-making and execution. The batter does not press “cover drive” to receive a guaranteed cover drive. The batter attempts a cover drive; line, length, footwork, timing, swing path, bat face, contact point and delivery movement decide what actually happens.
+
+Product vision
+
+Create a cricket experience where a skilled player can explain why a ball produced a particular outcome: the bowler changed pace, the batter misread length, the front foot did not reach the pitch, contact happened late, the bat face was open, and the ball sliced toward the off side. Outcomes should be readable, reproducible and fair.
+
+Design pillars
+
+Cricket logic before spectacle. Rules, ball behavior and player decisions take priority over flashy effects.
+
+Skill creates outcomes. RNG may represent tiny environmental or human variation, never decide the result by itself.
+
+Readable physicality. Players must see the line, length, bounce, seam/spin, contact and fielder response.
+
+One locked camera. A fixed elevated behind-the-bowler view preserves spatial learning and match readability.
+
+Mobile-first controls. Touch controls must be precise, comfortable and usable without covering the ball or striker.
+
+Competitive fairness. Match simulation and scoring are server-authoritative; clients are not trusted to declare outcomes.
+
+Efficient visuals. Convincing ground and equipment, clear silhouettes, strong animations and good lighting without demanding high-end 3D.
+
+Non-goals for the first release
+
+Photorealistic AAA graphics or cinematic camera cuts.
+
+A full licensed international roster, real player likenesses or official team branding.
+
+Eleven human-controlled players on each side.
+
+Career mode, auction mode, franchise management or deep RPG progression.
+
+Complex weather simulation in the initial competitive release.
+
+Arbitrary power-ups that override cricket skill.
+
+Guaranteed boundaries from a particular shot button.
+
+
+1. Audience, platform and product requirements
+
+1.1 Target audience
+
+Cricket fans who understand batting, bowling, field placements and common dismissals.
+
+Casual mobile players who can learn the controls quickly.
+
+Competitive players who value timing, prediction, control and fair online play.
+
+Desktop browser players using keyboard/mouse or controller as a secondary audience.
+
+1.2 Platform requirements
+
+Primary: modern mobile browsers on Android and iOS, launched through a URL.
+Secondary: desktop browsers.
+Orientation: landscape is the primary gameplay orientation. If a device is in portrait, show a restrained rotate-device interstitial rather than compressing the pitch and controls into an unusable layout. A portrait-friendly lobby may be considered separately.
+Input: touch first; keyboard/controller mappings are optional parity inputs.
+Session: fast entry to a casual match, with a reconnect path for interrupted connections.
+
+1.3 Performance targets (design targets, subject to engineering validation)
+
+Target stable 60 FPS on capable mid-range devices; allow a scalable 30 FPS mode on lower-end devices.
+
+Keep the ball visible and responsive even when quality settings are reduced.
+
+Avoid heavy full-screen post-processing, dense crowds, expensive real-time reflections and excessive particle effects.
+
+Use level-of-detail, instancing, baked lighting where appropriate, compact textures and pooled effects.
+
+Keep control feedback immediate; local input acknowledgement must not wait for a remote round trip.
+
+Show network quality and reconnect state without exposing technical clutter.
+
+1.4 Core user stories
+
+As a batter, I can read the delivery and choose a sensible response based on line, length, pace and variation.
+
+As a batter, I can influence the result through footwork, shot type, swing timing, bat angle and running decisions.
+
+As a bowler, I can choose speed, line, length, release, seam/swing/spin and variation to challenge the batter.
+
+As a bowler, I can create a plan across an over rather than selecting random delivery buttons.
+
+As a fieldering side, the AI can position, move, pick up, throw and catch according to the ball and field settings.
+
+As a player, I can understand why I scored, missed, edged, got caught or was run out.
+
+As a mobile player, I can perform all important actions with reachable, non-overlapping controls.
+
+As an online player, I receive authoritative match results and can recover from brief connection loss.
+
+
+2. Camera, framing and visual direction
+
+2.1 Locked camera specification
+
+The supplied reference screenshot is the camera/layout anchor. Use a fixed elevated camera behind the bowler's end, looking down the length of the pitch toward the striker's wicket.
+
+
+
+Camera sits behind and above the bowler's delivery end, not at ground level.
+
+The pitch is centered and runs vertically through the screen.
+
+The bowler is in the near foreground, approaching/releasing toward the far-end striker.
+
+The striker, non-striker, wicketkeeper, umpire and relevant fielders remain readable in the composition.
+
+Both batting creases, both sets of stumps and the pitch rectangle should be visible whenever possible.
+
+The outfield and boundary occupy the space around the pitch, with enough room to read shot direction and fielding movement.
+
+Camera uses a stable perspective / orthographic-like projection that preserves spatial relationships and avoids dramatic lens distortion.
+
+No camera rotation, side-view cut, top-down cut, batter POV cut or automatic cinematic cut during a live delivery.
+
+Do not zoom in and out during ordinary gameplay. Optional pre-match presentation may use a separate non-interactive presentation scene, but live gameplay returns to the exact locked camera.
+
+Ball tracking must be achieved through ball readability, subtle trajectory cues, fielder movement and a restrained HUD indicator, not by moving the camera away from the locked view.
+
+2.2 Screen composition
+
+Primary game area: pitch, ball, both batters, bowler, umpire, keeper and active fielders.
+Top HUD: timing feedback (Early / Good / Perfect / Late), pause, connection indicator and compact over/innings context.
+Left control zone: movement/positioning and bowler aim controls when relevant.
+Right control zone: shot family, footwork and running actions for batting; delivery controls for bowling.
+Bottom scoreboard: innings score, wickets, overs, striker/non-striker, current bowler and target/required rate where applicable.
+
+Maintain thumb-safe zones and reserve a clear region around the striker and incoming ball. HUD transparency may increase during the delivery if controls overlap the playfield. Use icons plus labels where space permits; never rely on color alone.
+
+2.3 Art direction
+
+Realistic cricket-ground materials: short-cut outfield grass, pitch soil/clay, worn batting areas, crease paint/chalk, rope or boundary marker, wood stumps and bails, leather ball and fabric uniforms.
+
+Stylized-realistic player art: believable human proportions, readable cricket silhouettes, economical mesh and rig complexity.
+
+Natural daylight as the default. Night matches can be a later environment variant with stadium floodlights.
+
+Strong material separation: green grass, warm brown pitch, white crease lines, wood stumps, bright ball and contrasting uniforms.
+
+Shadows should help identify player placement and ball height without making the ball disappear.
+
+Avoid plastic-looking grass, toy proportions, exaggerated cartoon heads, muddy UI, cluttered overlays and overdone bloom.
+
+2.4 Camera coordinate model
+
+Use a consistent cricket-world coordinate system irrespective of the visual projection:
+
+X: across the pitch, left/right from the batter's viewpoint.
+
+Y: along the pitch, bowler end to striker end.
+
+Z: height above the playing surface.
+
+The camera projects (X,Y,Z) into the locked screen view. The simulation operates in world coordinates; render perspective is not used to calculate cricket rules. The same world coordinates govern delivery line, bounce, bat contact, fielding, running and boundaries.
+
+
+3. Match structure and game flow
+
+3.1 Core match format
+
+1v1 real-time online match.
+
+Each player controls one side's batting/bowling role during an innings.
+
+First innings: Player A bats while Player B bowls and sets field tactics; AI controls fielders.
+
+Second innings: roles swap. Player B bats while Player A bowls.
+
+Five overs per innings, six legal balls per over, maximum 30 legal deliveries per innings.
+
+Maximum ten wickets, though the innings ends earlier if ten wickets fall.
+
+The chase ends immediately when the target is reached.
+
+If scores are tied after both innings, use a declared tie result in the initial release. A Super Over can be a later ruleset.
+
+Important product choice: the opponent who bowls should still feel like the fielding captain. They control bowling and a small set of field presets/adjustments; individual fielders are AI-controlled in the initial release. This maintains a fair, manageable 1v1 experience.
+
+3.2 Match flow
+
+Main menu / play.
+
+Quick match matchmaking.
+
+Connection and opponent confirmation.
+
+Toss or a simple alternating first-innings assignment. The initial version may use fair random toss with visible result.
+
+Field preset selection and short ready countdown.
+
+First innings: 5 overs or earlier end condition.
+
+Innings break: score summary, roles swap, target displayed.
+
+Second innings chase.
+
+Result screen: winner, final score, over-by-over summary, key moments and player performance.
+
+Rematch / return to lobby.
+
+3.3 Match state machine
+
+LOBBY -> MATCHMAKING -> MATCH_FOUND -> TOSS -> FIELD_SETUP -> READY -> DELIVERY_SETUP -> RUNUP -> RELEASE -> FLIGHT_PRE_BOUNCE -> BOUNCE -> FLIGHT_POST_BOUNCE -> BAT_CONTACT_OR_MISS -> FIELDING -> RUNNING_OR_DEAD_BALL -> BALL_RESULT -> NEXT_DELIVERY.
+
+On over completion, run OVER_BREAK -> FIELD_SETUP -> NEXT_OVER. On innings end, run INNINGS_BREAK -> ROLE_SWAP -> SECOND_INNINGS. End state is MATCH_RESULT. Invalid state transitions must be rejected by the authoritative match service.
+
+3.4 Match clocks and turn pacing
+
+Give each bowler a short delivery setup window (for example, 8-12 seconds) to avoid stalling.
+
+Give the batter a short pre-delivery readiness window, but do not force the batter to commit before release.
+
+No hard reaction timer after release beyond the actual physical window to make a shot.
+
+Run decisions must happen while the ball is live, with clear call feedback.
+
+Pause is not available as a unilateral freeze in ranked online play. A brief pause may be used for connection recovery or mutually agreed breaks.
+
+
+4. Core simulation architecture
+
+4.1 Simulation principle
+
+The live match is a deterministic, server-authoritative simulation. Clients send intent inputs (delivery setup, run call, shot selection, footwork, swing trigger, field preset); the server calculates legal state, ball physics, contact, runs, wickets and final score. Clients render predicted motion and reconcile to server updates.
+
+Do not let the batting client report “six”, “caught” or “wicket” as a trusted result. It may send input timestamps and action values; the authoritative simulation resolves the result.
+
+4.2 Recommended logical services
+
+Identity/session service: player session, authentication, reconnect token and lobby identity.
+
+Matchmaking service: skill/latency-aware queue, region preference, queue timeout and opponent assignment.
+
+Match coordinator: creates match, toss, innings, roles, timers and state transitions.
+
+Rules engine: overs, legal deliveries, extras, wickets, target, innings completion and result.
+
+Ball simulation: release, flight, swing, seam, spin, bounce, drag and collision.
+
+Batting simulation: footwork, swing timing, bat path, bat face, collision and shot launch vector.
+
+Fielding simulation: positioning, reaction, interception, pickup, throw, catch and fielder boundary contact.
+
+Running simulation: batter/non-striker movement, running calls, turn, crease arrival and run-out.
+
+Replication layer: snapshots, input sequence numbers, state reconciliation and event delivery.
+
+Telemetry/replay: input timeline, deterministic seed, key events, latency, result and anti-cheat evidence.
+
+4.3 Simulation tick and replication
+
+Design target: authoritative simulation at a fixed 30-60 Hz tick, with rendering at the device's available frame rate. Use timestamped inputs, sequence IDs and a short input buffer. Send compact state snapshots plus discrete events (release, bounce, contact, catch attempt, run completion, wicket, boundary). Interpolate remote player and ball visuals between authoritative states. Reconcile the local prediction smoothly; do not snap the ball visibly unless correcting a material mismatch.
+
+4.4 Latency fairness
+
+Record the client input timestamp and server receipt time.
+
+Use bounded input-time compensation only for a shot input within the plausible delivery window; never permit arbitrary rewinding.
+
+Base the authoritative contact calculation on a server-owned timeline and known input delay budget.
+
+Use matchmaking to prefer reasonable latency; show connection quality.
+
+A disconnect grace window allows reconnecting to the same match. If the player fails to reconnect, apply a clearly defined forfeit rule.
+
+Rank/competitive modes must use stricter anti-cheat checks and server-owned attributes.
+
+4.5 Reproducibility and fairness
+
+Each delivery gets a server-generated seed. Physics are deterministic from match state, player inputs, environment and seed. Randomness may provide tiny repeatability-breaking variation (for example, minuscule surface or animation variance) but may not rescue poor timing or punish a correct read. Record enough state to replay disputed deliveries.
+
+
+5. Ball physics specification
+
+5.1 Ball lifecycle
+
+Each delivery has these stages:
+
+Bowler run-up and gather.
+
+Delivery stride and release.
+
+Pre-bounce flight.
+
+Pitch impact and bounce response.
+
+Post-bounce flight toward batter.
+
+Bat contact, wicket contact or wicketkeeper/fielding interception.
+
+Post-contact flight/roll, catch, boundary or pickup.
+
+Dead-ball resolution and rules evaluation.
+
+5.2 Ball state variables
+
+At minimum track:
+
+World position (x,y,z).
+
+Linear velocity (vx,vy,vz).
+
+Angular velocity / spin vector.
+
+Ball orientation and visible seam orientation.
+
+Radius, mass and collision response coefficient.
+
+Air drag and gravity.
+
+Swing coefficient and swing axis.
+
+Seam deflection coefficient and pitch-contact response.
+
+Surface friction, restitution and roughness.
+
+Current phase: bowled, airborne, bouncing, contacted, caught, rolling, dead.
+
+Last collision type and time.
+
+5.3 Flight physics
+
+Use a consistent model combining gravity, drag, and optional Magnus/swing force. A conceptual model:
+
+a = gravity + drag(v) + swing_force + spin_force
+
+where drag opposes velocity, swing acts primarily laterally in flight and spin force changes direction/flight when appropriate. Keep this deterministic and tuned to readable cricket behavior. The final exact coefficients are a physics tuning task, not arbitrary per-shot multipliers.
+
+5.4 Bounce physics
+
+At pitch contact, calculate:
+
+Incoming vertical velocity.
+
+Surface hardness and friction profile.
+
+Pitch location and wear zone.
+
+Seam orientation and seam movement.
+
+Spin axis and spin rate.
+
+Ball's horizontal speed.
+
+Resolve outgoing velocity using restitution, friction and directional deflection. A fast good-length ball should not bounce like a slow spinner. A yorker may skid or hit near the base of the stumps; a short ball should rise enough to challenge a pull/hook. Bounce should be varied by delivery and pitch condition, not by hidden random outcome tables.
+
+5.5 Ball readability
+
+Keep the ball at a visible screen size across its flight; adjust rendering scale based on depth/height without making it cartoonishly large.
+
+Maintain clear contrast against grass and pitch.
+
+Use a short, subtle trail only at high speed or when needed for readability.
+
+Show seam rotation only close enough to be legible; it must not become a misleading spin indicator.
+
+A tiny shadow/contact cue helps players judge height and bounce.
+
+The ball must not disappear behind UI controls or player bodies; controls must be positioned to preserve the flight corridor.
+
+5.6 Delivery line, length and direction
+
+Represent the delivery's pitch location in world coordinates, not just a UI category. The bowler targets a horizontal line corridor and a longitudinal landing zone. “Line” categories (leg, middle, off, outside off) are player-friendly labels mapped to coordinates. “Length” categories (yorker, full, good, back of a length, short) are labels mapped to landing distance from the striker's crease. Add continuous control within each category.
+
+5.7 Ball outcome must not be random
+
+A ball may miss, beat the bat, hit pad, hit bat edge, collide with the middle, pop up, go along the ground or launch high. The result must be computed from geometry and timing. Any small stochastic noise is constrained and logged. Never do “perfect timing = guaranteed four” or “loft button = guaranteed six”.
+
+
+6. Bowling design
+
+6.1 Bowler control inputs
+
+The bowler chooses:
+
+Pace / effort level.
+
+Line target.
+
+Length target.
+
+Release point and release timing / accuracy.
+
+Movement type: seam, swing, off-spin, leg-spin, slower ball, cutter, bouncer, yorker.
+
+Movement intensity and intended direction where supported.
+
+Stock ball vs variation.
+
+Optional field preset or one/few field adjustments.
+
+The control interface must communicate that increasing speed can reduce control and/or movement control; max effort is not always the best ball.
+
+6.2 Delivery families
+
+Fast / medium pace
+
+Stock seam-up: reliable pace, seam potential and balanced control.
+
+Outswing / inswing: lateral movement in flight, dependent on release, orientation and chosen intensity.
+
+Off-cutter / leg-cutter: deviation after pitch contact, with control and speed trade-offs.
+
+Slower ball: lower release speed disguised by similar arm action; action disguise matters.
+
+Yorker: full delivery aimed near the batter's feet/base of stumps.
+
+Full toss: miss in length target; dangerous if batter connects, may be no-ball if above applicable waist-height rule.
+
+Bouncer: short-pitched delivery rising toward body/head zone; height is determined by bounce and trajectory.
+
+Spin
+
+Off-break: turns away from a right-handed batter (direction is batter-handedness dependent).
+
+Leg-break: turns into a right-handed batter.
+
+Googly: leg-spinner's disguised opposite-turn variation.
+
+Top-spinner: increased dip/bounce behavior.
+
+Slider: reduced flight/turn, skids on.
+
+Arm ball: spins less or moves with arm-side line.
+
+Do not use labels as fake effects. A variation must alter ball parameters and be visible through a plausible flight/bounce difference.
+
+6.3 Bowler action and release mechanics
+
+Bowler has a readable run-up rhythm, gather, bound/delivery stride, front-foot landing, arm rotation, wrist/finger release and follow-through.
+
+Release position determines delivery direction and bounce point.
+
+A release timing/accuracy window affects line/length control, not a random power bonus.
+
+Repeated actions should have small natural animation variations while preserving the same underlying physical release inputs.
+
+Include right-arm and left-arm bowling variants; adapt movement and line relative to batter handedness.
+
+Verify front-foot no-ball detection against the crease plane in the simulation, not by animation alone.
+
+6.4 Bowling skill attributes
+
+Pace control.
+
+Line control.
+
+Length control.
+
+Swing control.
+
+Seam control.
+
+Spin control.
+
+Variation disguise.
+
+Stamina / consistency (only if match length and product goals justify it).
+
+Skill attributes slightly widen reliable execution windows; they do not create impossible deliveries or override batter skill.
+
+6.5 Bowling strategy
+
+Bowler can review the batter's recent tendencies (for example, strong on leg side, late on pace, vulnerable to short length) only when based on visible match behavior.
+
+Field presets: attacking, balanced, defensive, boundary protection. Presets must obey cricket fielding restrictions.
+
+Allow quick adjustments to a limited number of fielders between balls or at over breaks; avoid a slow full-field editor mid-over.
+
+Delivery history panel displays line/length map after each over or in a compact recent-ball strip.
+
+
+7. Batting design
+
+7.1 Batter decisions
+
+Batting is composed of separate decisions, not one button:
+
+Read the bowler's run-up and release.
+
+Predict line, length, speed and variation.
+
+Select footwork / movement.
+
+Select shot family or defensive intent.
+
+Trigger the bat swing at the right time.
+
+Set/adjust bat face and directional intent where the control scheme allows.
+
+Decide whether to run after the ball is struck.
+
+The system must not silently auto-correct a wrong shot into a successful one.
+
+7.2 Footwork options
+
+Front foot: step toward the pitch of a full/good-length ball; shifts contact position forward and can improve drive/sweep access.
+
+Back foot: transfer weight and move back for short length; improves pull, cut and defensive response to rising balls.
+
+Advance / charge: move down the pitch to meet the ball earlier; high reward if read correctly, risk of being beaten/stumped if misread.
+
+Stay balanced: neutral position; retains flexibility but may sacrifice reach.
+
+Leave: no swing; batter withdraws/keeps bat away. The result depends on line and height; a leave is not automatically safe.
+
+Optional later: late dab, switch hit or reverse sweep. These are not required for initial release and must not compromise core shot quality.
+
+Footwork has a start time and movement duration. If selected too late, the batter may be caught between feet, reducing balance and shot control.
+
+7.3 Shot library
+
+Each shot is a family with a preferred delivery zone, footwork, bat path, face angle and risk profile. The shot family expresses intent; it does not dictate outcome.
+
+Forward defence: full/good ball on the stumps; front foot; low scoring, but edges remain possible if line or timing is poor.
+
+Back-foot defence: shorter ball; back foot; glove/edge risk if the ball rises or moves.
+
+Straight drive: full ball near the stumps; front foot; timing- and face-sensitive, with straight-hit/catch risk if lofted.
+
+On drive: full ball on leg/middle; front foot; can close the bat face too early and find mid-on.
+
+Off drive: full ball on off/middle; front foot; outside-edge risk if late or if the face is wrong.
+
+Cover drive: full/wide-ish off-side ball; front foot; edges and cover-point catches if mistimed.
+
+Square drive: width outside off; front foot/neutral; edge risk if reach is poor.
+
+Cut: short/wide off-side ball; back foot; top-edge or point-catch risk.
+
+Late cut: wide ball passing later; back foot/late hands; keeper/slip edge risk.
+
+Pull: short ball around the body; back foot; top edge, mistime or deep-fielder catch risk.
+
+Hook: short ball at upper body/head; back foot; high catch risk and demanding timing/reaction.
+
+Flick / glance: leg-side line; front foot/neutral; leg-side placement, with LBW risk if contact is poor.
+
+Sweep: full/low ball, often spin; front foot/knee bend; LBW, bowled or top-edge risk.
+
+Paddle sweep: fine-leg placement; front foot/low bat path; fine-edge/catch risk.
+
+Lofted drive: full ball in the hitting arc; front foot; high elevation and catch risk.
+
+Lofted leg-side hit: full/slot ball on pads; front/neutral; high catch risk and timing sensitivity.
+
+Ramp / scoop (later): predictable short/fine line; pre-planned; high execution risk and not critical for first release.
+
+7.4 Shot direction
+
+Shot direction must emerge from the physical contact, not a fixed “shot button = direction” mapping. Relevant variables:
+
+Bat face angle at contact.
+
+Bat swing plane and swing direction.
+
+Horizontal contact offset (inside/outside edge, toe, middle).
+
+Vertical contact location (near shoulder, center, lower blade).
+
+Incoming ball velocity and spin.
+
+Batter's footwork and body alignment.
+
+Timing relative to the ideal contact instant.
+
+The system calculates a launch vector in world space. The result can be any realistic direction: straight, mid-on, mid-off, cover, extra cover, point, third man, square leg, midwicket, fine leg or behind the batter. Misaligned contact naturally creates slices, hooks, top edges, inside edges or aerial miscues.
+
+7.5 Batting timing
+
+Timing is relative to the actual ball's path and the selected swing path/contact point, not a universal fixed timer. The UI may show a compact meter marked Early / Good / Perfect / Late as feedback, but the simulation uses a continuous timing error.
+
+Too early: ball may pass before bat reaches ideal contact plane; possible inside edge, leading edge or miss.
+
+Perfect window: best chance of clean contact, subject to line, length, movement and swing geometry.
+
+Too late: outside edge, late contact, weak steer or miss.
+
+Pace, bounce, movement, footwork and shot type shift the ideal timing window.
+
+The meter must be an aid, not a replacement for reading the delivery. Do not reveal exact future bounce or contact frame.
+
+7.6 Contact quality model
+
+Use a transparent conceptual score with separately inspectable inputs. Suggested starting weight distribution for tuning (not a final sports-science claim):
+
+Timing alignment: 30%.
+
+Contact-point alignment: 20%.
+
+Shot-to-line/length suitability: 15%.
+
+Bat path and swing plane: 15%.
+
+Bat face angle: 10%.
+
+Footwork/balance: 10%.
+
+Bowler movement, release deception and bounce quality affect the difficulty of each component. Character skill can modify precision modestly. The exact weights must be tuned with playtesting. Avoid a single hidden “connection RNG”.
+
+Contact quality bands:
+
+Miss / beaten: no bat collision; ball may hit stumps, keeper or pad.
+
+Thin edge: grazing bat collision; sharp deviation and possible catch.
+
+Inside edge: deviation toward leg side; may hit pad/stumps or run away.
+
+Top/bottom edge: unusual vertical launch or weak ground contact.
+
+Off-center contact: reduced exit speed and altered direction.
+
+Solid contact: useful shot with direction from bat face and swing path.
+
+Sweet-spot contact: best transfer of energy, still constrained by incoming velocity and shot trajectory.
+
+7.7 Bat swing mechanics
+
+Every shot animation is built from a shared rig and a shot-specific motion profile with:
+
+Ready stance: balanced, bat grounded or raised according to selected preset.
+
+Trigger/backswing: hands and bat move into preparation; the start time depends on input.
+
+Weight transfer: hips/shoulders/feet rotate or step according to front/back-foot intent.
+
+Downswing: bat accelerates along a defined swing plane.
+
+Contact window: a short window in which bat volume intersects the ball volume. The physical solver uses precise bat-surface position and velocity.
+
+Follow-through: completes the motion according to the shot; clean drive extends through the line, pull rotates across body, cut uses horizontal path, defensive stroke softens hands.
+
+Recovery: return to balanced stance and become available for the next action/run.
+
+Do not use a single generic swing animation for all shots. At minimum, drive, cover/off-drive, pull, cut, sweep, loft and defence require distinct silhouette, swing plane and follow-through. Timing must alter the visible contact moment and follow-through plausibly.
+
+
+8. Fielding, catching and wicketkeeping
+
+8.1 Fielding system
+
+Fielders are AI-controlled in the first 1v1 release. The bowling player selects field presets and limited positional changes. Every fielder has:
+
+Position, role and preferred catch/pickup zone.
+
+Acceleration, max speed and turn rate.
+
+Reaction delay.
+
+Ground pickup skill.
+
+Catch skill and reach envelope.
+
+Throw power, accuracy and release time.
+
+Diving/sliding ability.
+
+Boundary awareness and safe landing behavior.
+
+Fielders should not teleport to the ball. They read the trajectory, move, adjust their path and attempt an intercept based on reach and reaction limits.
+
+8.2 Ground fielding lifecycle
+
+Detect ball trajectory and likely landing/rolling path.
+
+Assign the best fielder using position, travel time, skill and backup coverage.
+
+Fielder reacts and accelerates toward intercept point.
+
+Fielder brakes, bends and gathers the ball; bobble chance depends on speed, bounce, awkwardness and skill.
+
+Fielder chooses direct hit or throw to a wicketkeeper/receiver based on run threat.
+
+Ball travel and receiver gather are simulated.
+
+Umpire/rules engine checks crease arrival and wicket break time.
+
+8.3 Catching mechanics
+
+A catch is not a random “fielder nearby = out”. Resolve:
+
+Ball trajectory and spin.
+
+Predicted intercept point and arrival time.
+
+Fielder reaction time and movement speed.
+
+Catching reach, jump height and dive envelope.
+
+Catch skill and hand orientation.
+
+Whether the fielder has control of the ball before touching the ground or boundary.
+
+Whether the fielder's feet/body touch the boundary while in contact with the ball.
+
+Catch animation states: track, adjust feet, settle, hands form cup, contact, secure, fall/recover. Include one-handed, two-handed, low, overhead, diving forward, diving sideways and running-back catch variants. Use a small number of outcome states: clean catch, juggle then secure (if controlled before ground), drop, fingertip deflection, parry, or miss.
+
+8.4 Wicketkeeper
+
+Holds an appropriate stance behind striker's stumps.
+
+Tracks line, pace and bounce.
+
+Collects balls passing the bat/pad or missing the stumps.
+
+Performs takes standing up or back depending on bowler/line/length context.
+
+Can attempt stumping if batter advances and is out of crease.
+
+Can collect and remove bails for run-out support if the ball reaches keeper.
+
+8.5 Fielding positions
+
+Support common positions and sensible AI presets: slip(s), gully, point, cover, extra cover, mid-off, mid-on, midwicket, square leg, fine leg, third man, long-off, long-on, deep cover, deep point, deep midwicket, deep square leg, deep fine leg and wicketkeeper. The exact allowed number and restriction logic follows the selected ruleset.
+
+
+9. Running between wickets
+
+9.1 Running model
+
+Running is a live decision, not an automatic animation after contact. Both batters have a world position, movement speed, acceleration, turning radius, fatigue/effort state and crease-reaching state.
+
+9.2 Controls
+
+Mobile batting controls should provide clear, reachable controls:
+
+RUN / YES: commit to a run.
+
+STOP / NO: cancel a pending second run or prevent starting when not committed.
+
+SLIDE (contextual): optional late crease reach with a small control window.
+
+RUN 2 / repeat call: request another run after reaching the far crease if the ball is still live.
+
+A simplified initial control can use one large RUN button with tap again to cancel/return, but the UI must show whether the batter pair is committed, turning, or returning. The non-striker responds to the call. The runner must not move before ball contact except on a legitimate advance/charge input.
+
+9.3 Run decision and resolution
+
+At contact, evaluate ball direction, distance to fielders, fielder reaction, keeper position, ball speed and likely return time. The player calls yes/no; the other runner responds. Once committed:
+
+Both batters accelerate to opposite creases.
+
+Each must ground bat/body beyond the crease line to complete a run.
+
+At the turn, decelerate, plant and reverse direction; turn time depends on balance and agility.
+
+The player may commit to a second run only after assessing the fielding response.
+
+A direct hit or throw breaks the wicket; compare wicket break time with batter's grounded-crease time.
+
+If the first run is completed and second is attempted, a run-out may occur at either end.
+
+9.4 Running skill
+
+Attributes should have restrained impact: sprint speed, acceleration, turn/agility, stamina and slide reach. Reading the field and calling correctly matter more than a high raw speed stat. Avoid a pay-to-win speed system.
+
+9.5 Running feedback
+
+Clear “YES / NO / WAIT” call state.
+
+Direction arrow or subtle path cue for each batter.
+
+Running animation visibly accelerates, turns and grounds the bat.
+
+Non-striker response is fast and understandable.
+
+Show a short result message: 1 run, 2 runs, 3 runs, run-out, or short run if the rule is supported.
+
+
+10. Wickets, extras and rules
+
+The initial release should use a clearly defined limited-overs ruleset inspired by standard cricket laws. All rules must be encoded centrally and shown in an in-game rules/help screen. If the product chooses a simplified house rule, disclose it before the match.
+
+10.1 Dismissals
+
+Bowled.
+
+Caught.
+
+LBW (leg before wicket).
+
+Run out.
+
+Stumped.
+
+Hit wicket.
+
+Obstructing the field (optional for initial release; include only if reliably represented).
+
+Timed out is not needed in live five-over play.
+
+Each dismissal requires a clear rules-engine decision, a visible animation and correct scorecard attribution (bowler credited where applicable; run-out generally not credited as bowler wicket).
+
+10.2 Extras
+
+Wide: delivery outside the applicable batter reach corridor and not legally playable under the chosen rule interpretation; adds one extra and does not count as a legal ball. Additional runs may be scored if ball remains live.
+
+No-ball: front-foot overstep and other selected no-ball conditions; adds one extra, does not count as a legal ball, and may trigger a free hit under the selected limited-overs ruleset.
+
+Bye: runs completed when ball passes bat and body without contact and is not a wide/no-ball classification.
+
+Leg bye: runs completed after ball contacts batter's body, subject to the batter attempting to play or evade under the chosen rule interpretation.
+
+Penalty runs can be omitted from initial release unless required by a specific rules event.
+
+10.3 Free hit
+
+If free-hit rules are enabled after a no-ball, show a clear free-hit indicator. On a free hit, dismissals are restricted according to the adopted ruleset. Do not implement a generic “one free wicket exemption”; configure exact allowed dismissal types.
+
+10.4 Over rules
+
+Six legal deliveries per over.
+
+Wides and no-balls do not count as legal balls.
+
+A wicket does count as a legal ball unless the event is a no-ball.
+
+Bowler changes are allowed at over breaks; the 1v1 opponent remains the bowler controller but can select a different bowler profile/strategy if the product supports a squad.
+
+Score display must show over notation correctly (for example, 3.4 means three overs and four legal balls, not 3.4 decimal overs).
+
+10.5 Boundary rules
+
+Four: ball reaches/passes the boundary after touching the ground within the field of play, without a fielder carrying it over the boundary first.
+
+Six: ball crosses the boundary on the full without touching the ground inside the field of play.
+
+Boundary rope/line has a clearly defined world-space perimeter.
+
+A fielder who controls the ball must not be touching the boundary or ground beyond it while in contact with the ball. A catch completed after boundary contact is not valid.
+
+If a fielder touches the ball and then contacts the boundary, apply the appropriate boundary result for the chosen ruleset.
+
+A ball that hits a boundary marker or passes underneath/through an invalid gap must still resolve consistently using a collision volume.
+
+Return the exact runs for running completed before the boundary according to the selected ruleset; avoid double-counting boundary and running runs.
+
+10.6 LBW decision model
+
+Use world-space prediction at the point the ball would reach the stumps if not intercepted by the batter. Evaluate:
+
+Was the ball legal under the selected LBW rules?
+
+Did it pitch in a qualifying region (if applicable)?
+
+Did it impact the batter's person in a qualifying zone?
+
+Was impact outside the applicable off-stump line restriction under the selected rule?
+
+Would the ball have hit the stumps based on the predicted path?
+
+Did bat contact occur first?
+
+The LBW logic must be consistent and explainable in replay/decision UI. A simplified probabilistic LBW is not acceptable.
+
+
+11. Player models, attributes and animation
+
+11.1 Player model direction
+
+Create original, fictional cricket athletes. Do not reproduce the exact players, uniforms, logos or identity seen in the reference screenshot. Use a shared modular rig with variations in body build, skin tone range, hair, facial hair, helmet, pads, gloves, shoes and uniform palette. No real-world national/team marks without licensing.
+
+11.2 Model requirements
+
+Human proportions that read correctly from the locked camera.
+
+Clear silhouette and limb separation.
+
+Rig suitable for run-up, foot placement, bat swing, dives, throws and catches.
+
+Separate skeleton/attachments for bat, gloves, helmet, pads and footwear.
+
+LODs and simplified distant models.
+
+Animation retargeting or shared rig conventions across players.
+
+Material colors that remain distinct against green grass and brown pitch.
+
+11.3 Player attribute philosophy
+
+Attributes provide a modest execution envelope, not automatic success. Core skills:
+
+Batting: timing, contact precision, footwork, shot control, power, composure.
+Bowling: pace, line, length, swing, seam, spin, variation disguise, control.
+Fielding: reaction, speed, pickup, throw accuracy/power, catch skill.
+Running: acceleration, sprint speed, turn/agility, slide control.
+
+Competitive fairness: attributes should be normalized or constrained in ranked matches. Player progression may expand style and consistency but must not make a weaker real player unbeatable through stats alone.
+
+11.4 Animation quality bar
+
+Animations should be cricket-specific and biomechanically plausible: weight transfer, shoulder/hip rotation, head stability, front/back foot, bat acceleration, follow-through, recovery, run acceleration and turning. Avoid skating, foot sliding, teleporting, snapping joints, generic baseball swings and identical left/right handed animation without mirroring corrections.
+
+
+12. UI/UX specification
+
+12.1 Main menu
+
+Primary actions: Play, Practice, Rules/Controls, Settings. Secondary: Profile, statistics, cosmetic customization, friends/invites. Do not crowd the first screen with currencies or live-service distractions.
+
+12.2 Match HUD
+
+Score / wickets.
+
+Over and legal-ball count.
+
+Batter name/role and non-striker.
+
+Bowler name/figures.
+
+Current target / runs required / balls remaining in chase.
+
+Last-ball result and extras.
+
+Connection quality indicator.
+
+Pause and settings.
+
+12.3 Batting UI
+
+Shot family controls arranged in a compact but reachable right-side cluster.
+
+Footwork controls (front, back, advance, leave) distinct from shot controls.
+
+A timing cue near the top edge, away from the ball's path.
+
+Run button appears only after contact or when the ball is live; clear cancel/return feedback.
+
+Optional bat-face direction gesture: a short directional swipe before swing adjusts face within a capped angle. It must not be required for casual accessibility.
+
+Avoid requiring simultaneous precision taps on too many controls. Offer simplified and advanced layouts.
+
+12.4 Bowling UI
+
+Pace/effort slider or press-and-release meter.
+
+Line/length aim target over a small pitch preview or direct in-world reticle.
+
+Delivery type selector.
+
+Movement intensity/direction control where relevant.
+
+Bowl button with a clear run-up start.
+
+Field preset button between balls.
+
+Show recent delivery map after over completion, not a large overlay during the run-up.
+
+12.5 Timing feedback
+
+Use text plus a restrained visual indicator: Early / Good / Perfect / Late. A perfect label should refer to timing only, not promise a good outcome; display connection quality separately if useful. Do not imply that a perfect-timed edge or poorly selected shot was a perfect cricket outcome.
+
+12.6 Accessibility and options
+
+Remappable button layout and left-handed control layout.
+
+Adjustable UI scale and contrast.
+
+Text labels in addition to icons.
+
+Haptics toggle.
+
+Reduced motion option for HUD effects.
+
+Sound sliders: commentary/ambience, effects, UI.
+
+Color-safe indicator shapes and text, not color-only cues.
+
+Optional simplified batting layout and advanced controls.
+
+
+13. Audio and haptics
+
+Audio is part of physical readability:
+
+Ball release / hand sound.
+
+Seam and air movement kept subtle.
+
+Pitch bounce with different timbres for full, good and short length.
+
+Bat contact differentiated for sweet spot, edge, toe, pad and glove.
+
+Stump/bail collision, keeper take, catch, ground pickup and throw.
+
+Footsteps, run-up, slide and fielder dive.
+
+Boundary crowd reaction scaled by match context.
+
+Scoreboard/UI and umpire cues.
+
+Haptics (mobile, optional): light tick on clean timing, distinct vibration on edge/miss or wicket, boundary pulse, run completion cue. Haptics must never be required to play.
+
+
+14. Modes, progression and competitive structure
+
+14.1 Initial modes
+
+Quick Match: online 1v1, 5 overs each.
+
+Practice Nets: local batting practice against configured bowling patterns; no progression pressure.
+
+Bowling Practice: target line/length and variation drills.
+
+Tutorial: short guided lessons for timing, footwork, bowling control, running and rules.
+
+14.2 Later modes (not first-release dependencies)
+
+Private room / invite friend.
+
+Ranked matchmaking and seasonal leaderboard.
+
+Tournament bracket.
+
+Longer formats (10/20 overs).
+
+Local pass-and-play or AI opponent.
+
+Custom rules and stadium cosmetics.
+
+14.3 Progression
+
+Progression should reward participation, practice and mastery. Cosmetic unlocks are safe. If attributes can improve, cap their competitive influence. Never sell guaranteed timing, power or bowling movement. Make matchmaking consider skill rating and latency.
+
+
+15. Technical architecture recommendation (design-level only)
+
+This section recommends a direction; it does not prescribe code or start implementation.
+
+15.1 Client
+
+TypeScript-based browser game client.
+
+WebGL 2.5D/3D renderer (for example, Three.js or Babylon.js) to support real ground geometry, shadows, ball flight, character rigs and a locked camera.
+
+UI layer separate from the 3D scene so touch layout can adapt to device safe areas.
+
+Local prediction for input responsiveness; authoritative reconciliation for outcomes.
+
+Asset bundles split by common stadium, player rig, animation, UI and audio groups.
+
+15.2 Server
+
+Real-time authoritative match service using persistent WebSocket connections.
+
+Matchmaker and room coordinator.
+
+Deterministic simulation library shared in concept between client preview and server authority, with server as source of truth.
+
+Database for accounts, stats, match records, cosmetics and progression; avoid storing every frame forever.
+
+Replay/event log for important match events and abuse investigation.
+
+15.3 Data model (conceptual entities)
+
+PlayerProfile
+
+PlayerLoadout / CosmeticLoadout
+
+MatchRoom
+
+MatchSettings
+
+InningsState
+
+TeamState / BattingSide / BowlingSide
+
+DeliveryInput
+
+BallState
+
+BatterState
+
+BowlerState
+
+FielderState
+
+RunningState
+
+ScorecardEvent
+
+ReplaySeed / ReplayEvent
+
+NetworkMetrics
+
+15.4 Anti-cheat
+
+Server-authoritative simulation and score.
+
+Validate input ranges, state transitions and action timing.
+
+Reject shots submitted outside a legal state or impossibly early/late sequence.
+
+Do not accept client-declared wickets, runs, catches or boundaries.
+
+Rate-limit matchmaking and room actions.
+
+Detect impossible input cadence and tampered client versions where practical.
+
+Store compact replay evidence for unusual events.
+
+15.5 Reconnect and failure behavior
+
+A short reconnect grace period restores the existing player role and match state.
+
+If one client disconnects during a live ball, the server finishes that ball based on already accepted inputs and applies the agreed disconnect rule for subsequent action.
+
+Avoid allowing pause abuse to interrupt a delivery.
+
+A match that cannot be restored should produce a clear technical result, not silently corrupt the score.
+
+
+16. Asset production bible and generation prompts
+
+16.1 Global visual consistency block
+
+Append this block to every asset prompt unless the prompt explicitly requests an isolated object render:
+
+Create an original asset for a polished, lightweight mobile-browser cricket game. The art direction is grounded, clean, realistic-stylized cricket simulation rather than photoreal AAA or cartoon arcade. Use believable human and equipment proportions, natural materials, restrained detail, clear silhouettes and lighting that reads on a small landscape phone screen. The locked gameplay camera is elevated behind the bowler, looking down the full pitch toward the striker; keep the pitch vertical and centered in the gameplay composition. The supplied reference image is a camera/layout guide only. Do not copy its player identities, uniforms, logos, UI artwork or proprietary models. No text, watermark, brand, real team logo or licensed likeness unless specifically requested. Maintain consistent scale, palette, light direction and asset proportions across all outputs.
+
+16.2 Environment prompts
+
+A. Full gameplay ground / stadium scene
+
+Design a complete cricket ground environment for a mobile browser cricket game, viewed from a fixed elevated behind-the-bowler camera. Show a long central brown cricket pitch running vertically from the near bowler's end to the far striker's end, white crease markings at both ends, realistic wooden stumps and bails, closely cut green outfield, visible boundary rope/line and enough open field around the pitch for fielders. Include subtle grass variation, worn pitch areas, natural daylight, soft player shadows and a clean distant stadium perimeter. Composition must keep the entire pitch and both wickets readable. Grounded, premium stylized realism, efficient geometry, no dramatic camera angle, no side view, no top-down map view, no text or UI.
+
+B. Grass / outfield material
+
+Create a seamless, tileable short-cut cricket outfield grass material. Natural green color variation, fine mowing direction, subtle blade detail, slightly different patches without obvious repeating tiles, physically believable roughness, no flowers, no oversized grass blades, no muddy noise. Provide albedo, normal and roughness maps with consistent scale for a large cricket field, optimized for mobile rendering.
+
+C. Cricket pitch surface material
+
+Create a seamless cricket pitch surface material: compacted brown soil/clay with fine granular texture, subtle footmarks and natural wear, slightly dry central strip, restrained tonal variation. It must read as a prepared cricket pitch from an elevated gameplay camera, not a desert or road. Provide albedo, normal and roughness maps; no lines or stumps embedded in the texture.
+
+D. Pitch wear and footmark decals
+
+Create modular transparent decal textures for a cricket pitch: bowler landing scuffs, batter crease wear, light shoe marks, small cracks and worn soil patches. Keep details subtle and correctly scaled; no large holes, no random mud splashes. Provide separate decals so wear can be layered and varied between matches.
+
+E. Crease markings
+
+Create accurate, clean white cricket crease markings as a separate decal/mesh set for both ends of a standard cricket pitch: bowling crease, popping crease and return crease. Use straight, crisp, readable lines with correct spatial relationships and consistent thickness. Create for the specified game pitch dimensions and verify both wickets mirror correctly. No extra football/soccer markings.
+
+F. Boundary rope and field edge
+
+Create a low-profile cricket boundary rope/marker system that follows a large oval field boundary. It should be visible from the fixed behind-the-bowler camera without obstructing fielders or the ball. Use understated white or neutral rope with small support markers, consistent collision boundary alignment, no advertising text.
+
+G. Stadium / background dressing
+
+Create a restrained cricket stadium perimeter with modest stands, crowd silhouettes, light towers and neutral banners with no real team branding. Keep background detail low contrast and inexpensive to render so ball, pitch and players remain the focus. Provide day-match and optional night-match lighting variants. Avoid dense animated crowd simulation.
+
+H. Lighting variants
+
+Create lighting presets for the same cricket ground: bright overcast daylight, warm late-afternoon daylight and night under floodlights. Preserve ball visibility, readable player shadows and consistent material colors. Do not move or alter the gameplay camera. Avoid harsh bloom, crushed shadows or blown-out pitch markings.
+
+16.3 Equipment prompts
+
+I. Red cricket ball
+
+Create a high-quality red leather cricket ball as a standalone 3D game asset. Correct spherical proportions, deep red leather with subtle grain, raised white stitched seam running around the ball, slight realistic wear and controlled specular highlights. Provide clean front/side/turntable views and PBR material maps. The seam must remain readable at small on-screen size. No logo or text.
+
+J. White cricket ball
+
+Create a white limited-overs cricket ball as a standalone 3D asset. Correct size and shape, clean white leather with subtle scuffing, raised seam stitching and a restrained gloss. Preserve visibility against green outfield and brown pitch. Provide PBR maps and turntable views; no logos or text.
+
+K. Pink cricket ball
+
+Create a pink cricket ball with realistic leather texture, raised seam stitching and controlled gloss. It must remain visually distinct in both daylight and floodlight conditions. Correct cricket-ball proportions; no branding.
+
+L. Stumps and bails
+
+Create a regulation-style set of three wooden cricket stumps with two separate bails. Use natural pale wood, subtle grain, correct slender proportions, simple clean geometry and readable edges. Provide assembled and separated versions, plus a version with bails dislodged for wicket animations. No sponsor marks or text.
+
+M. Cricket bat
+
+Create an original professional cricket bat as a game-ready 3D prop: willow blade, realistic face/spine/edges, handle grip, correct proportions and subtle wood grain. Provide front/back/side views and separate bat attachment pivot at the handle. Ensure blade thickness and edges are readable from behind-the-bowler gameplay camera.
+
+N. Pads, gloves and helmet
+
+Create a modular cricket batting protective equipment set: leg pads, batting gloves and helmet with grille. Use believable materials and joints, simplified but convincing details, neutral base colorways and modular attachment points for different player kits. No real brand logos.
+
+O. Umpire accessories
+
+Create neutral cricket umpire props: counter, hat, signal pose reference and optional boundary flag. Keep them simple and readable from the locked camera; no branded logos.
+
+16.4 Character prompts
+
+P. Batter character base model
+
+Design an original fictional cricket batter 3D character, full body, game-ready and riggable. Athletic but believable proportions, neutral balanced batting stance, helmet, gloves, pads, cricket shoes and a bat attachment. The silhouette must read clearly from an elevated camera behind the bowler. Create a neutral uniform with no national insignia, no real player likeness and no sponsor logo. Provide front, back, side and 3/4 orthographic views, neutral A-pose/T-pose and material breakdown. Use a shared human skeleton suitable for multiple shot animations.
+
+Q. Bowler character base model
+
+Design an original fictional cricket bowler 3D character, full body, game-ready and riggable. Athletic believable anatomy, bowling kit, cricket shoes and a clear neutral ready/run-up pose. The rig must support run-up, gather, bound, front-foot landing, bowling arm rotation, wrist release and follow-through. Create front, back, side and 3/4 views, neutral A-pose/T-pose, no real athlete likeness, no team branding or logos.
+
+R. Wicketkeeper character
+
+Design an original wicketkeeper 3D character with gloves, pads and helmet or cap as appropriate, low ready crouch and balanced stance. Create a shared rig supporting squat, lateral movement, catch, take, stumping and throw-to-stumps animations. The character must remain readable behind the striker's stumps from the locked camera. No copied player identity or brand marks.
+
+S. Umpire character
+
+Design an original cricket umpire 3D character in neutral dark trousers and light shirt/hat, believable adult proportions and calm upright posture. Provide standard standing pose and separate signal pose set for four, six, out, no-ball, wide and dead ball. No real governing-body logos.
+
+T. Fielder character set
+
+Design a modular set of original fictional cricket fielders using one shared rig, with varied but believable body builds and neutral uniforms. Include standing ready, low crouch, running, pickup, overhead catch, dive and throw poses. Uniform colors must contrast with the batter and grass. No real team marks or player likenesses.
+
+U. Non-striker batter
+
+Use the same batter rig and kit family to create a non-striker version in a ready position at the bowler's-end crease. It must support backing up, responding to run call, sprinting, turning, sliding and grounding the bat behind the crease. No duplicate static statue animation during a live ball.
+
+16.5 Animation prompt library
+
+Each animation should be produced on the shared rig, with root motion and contact markers. Create in-place and root-motion variants where useful. Keep feet planted where required and include anticipation, action, follow-through and recovery.
+
+V. Fast bowler run-up and delivery
+
+Animate an original right-arm fast bowler through a convincing run-up, gather, bound, delivery stride, front-foot landing, high-arm release and natural follow-through. Show acceleration and body weight transfer, stable head, shoulder/hip rotation, correct arm sequence and clear release frame. Include root motion, foot-contact markers, release event marker and a smooth recovery to fielding stance. Avoid baseball pitching mechanics, floating feet and robotic arm motion.
+
+W. Medium pace / swing bowling
+
+Animate a medium-pace bowler with a smooth, repeatable action that disguises stock and swing deliveries. The release should support seam orientation and wrist position changes while preserving a coherent bowling action. Include full body root motion, release marker and follow-through. Do not visually exaggerate swing; ball physics determines the actual movement.
+
+X. Spin bowling action
+
+Animate a right-arm spin bowler with a controlled approach, compact delivery stride, clear wrist/finger rotation and balanced follow-through. Provide separate off-spin and leg-spin release hand poses while sharing a believable action. Include top-spinner and slider release variants as subtle wrist/hand differences. The ball simulation, not a cartoon animation, determines turn and bounce.
+
+Y. Slower ball / cutter disguise
+
+Animate a pace bowler using a near-identical run-up and arm speed to the stock delivery but with a controlled change in wrist/finger release for slower ball or cutter. The disguise must be subtle and fair. Create separate release event markers and return to a natural follow-through.
+
+Z. Yorker and bouncer delivery variants
+
+Create delivery-action variants that retain the same bowler run-up. Yorker variant emphasizes controlled full-length release; bouncer variant uses the same legal bowling action but produces a shorter landing target. Do not change camera. Ball trajectory is driven by delivery parameters.
+
+AA. Batting ready stance and footwork
+
+Animate a balanced batter ready stance with natural micro-movement, bat lift and eye/head tracking toward bowler. Create separate front-foot step, back-foot transfer, advance down pitch, neutral stay and leave/withdraw actions. Include root motion and planted-foot markers. Keep the head stable and bat grip plausible.
+
+AB. Straight drive / forward drive
+
+Animate a technically sound front-foot straight drive: stride toward the pitch, head over the ball, front knee flex, shoulder and hip alignment, bat descending in a straight vertical/through-the-line path, clean contact pose and controlled extended follow-through. Include bat-ball contact marker and variable timing offset support. No exaggerated golf swing.
+
+AC. Cover drive / off drive
+
+Animate a front-foot cover/off drive with a forward stride, stable head, shoulder rotation, bat path angled through the off-side channel and open/adjustable bat face. Include separate cover-drive and straighter off-drive contact/follow-through variations. Maintain a plausible cricket stance and visible bat blade orientation.
+
+AD. On drive / flick
+
+Animate a front-foot leg-side drive/flick: weight transfer, wrist and forearm rotation, bat face closing to guide the ball toward mid-on/midwicket, balanced finish. Contact angle must remain adjustable by the simulation. Avoid making the shot automatically hit one direction.
+
+AE. Pull and hook
+
+Animate a back-foot pull/hook family. Batter transfers weight onto back foot, rotates hips and shoulders, brings bat across the body with a horizontal/diagonal swing plane, and completes a controlled follow-through. Create pull at chest height and hook at higher ball height with distinct posture. Add contact markers and mistimed/top-edge variants.
+
+AF. Cut / late cut
+
+Animate a back-foot cut family with a compact lateral bat path across the off side. Standard cut uses a firmer horizontal swing; late cut delays the hands and guides the ball fine behind point. Include separate contact points and open-face variations. No baseball batting stance.
+
+AG. Sweep / paddle sweep
+
+Animate a low sweep family: batter lowers body, bends knee, drops head, keeps eyes level, swings bat across the front of the pads and finishes low. Create conventional sweep and paddle sweep variants with different bat-face direction. Include miss, top-edge and controlled contact poses.
+
+AH. Defensive shots
+
+Animate forward and back-foot defensive strokes with soft hands, compact bat path, low energy transfer and controlled contact. Show bat presented close to body, stable head and minimal follow-through. Include inside-edge and outside-edge contact pose variants for physics timing.
+
+AI. Lofted drive
+
+Animate a lofted drive with a full swing arc and deliberate follow-through, maintaining a believable head and body position. The bat path should transfer energy upward only when contact point and face are appropriate. Create a clean loft, mistimed loft and top-edge pose. Do not guarantee a six through animation.
+
+AJ. Running between wickets
+
+Animate two batters reacting to a run call, pushing off, sprinting with bat in hand, carrying the bat safely, grounding the bat over the crease, planting and turning, then accelerating back. Create yes-call response, no-call stop, hesitation, turn, slide, dive-to-ground and short-run correction variants. Foot contact and crease crossing must be marked for simulation.
+
+AK. Fielding pickup and throw
+
+Animate a fielder sprinting to the ball, lowering center of gravity, gathering a rolling or low-bouncing ball cleanly, transitioning into an overarm throw and returning to ready stance. Create clean pickup, bobble, awkward pickup, quick release and long throw variants. Ball hand attachment and release markers are mandatory.
+
+AL. Catching set
+
+Animate clean two-handed chest catch, overhead catch, low catch, one-handed catch, running-back catch, diving forward catch and diving sideways catch. Include tracking gaze, foot adjustment, hands forming a cup, secure contact and follow-through. Add separate juggle/drop/deflection reactions. The catch simulation validates control; animation must not decide the wicket.
+
+AM. Wicketkeeper takes and stumping
+
+Animate wicketkeeper crouch, lateral shuffle, standing take, low take, high take, take to off side, take to leg side, quick gather and stumping with glove/ball at stump height. Include ball possession markers and stump-breaking event marker. Keep movements compact and cricket-realistic.
+
+AN. Dives, slides and boundary saves
+
+Animate fielders diving forward, sideways and backward; sliding to stop a ball near the boundary; parrying the ball back into the field; and recovering to throw. Show body momentum and ground contact. Include clear boundary awareness; animation cannot override whether the body touches the boundary.
+
+AO. Umpire signals
+
+Create clean, readable cricket umpire signals for four, six, out, no-ball, wide, dead ball and review/decision pending if included. Use distinct poses, held long enough to read from the fixed camera. No exaggerated theatrical gestures.
+
+16.6 UI visual prompts
+
+AP. Main menu UI
+
+Design a polished mobile-first browser cricket game main menu for Crease Clash. Premium sports broadcast visual language, deep greens, charcoal, warm pitch brown and restrained lime accent. Strong hierarchy: Play, Practice, Rules/Controls and Settings. Show an atmospheric cricket ground background while keeping text legible. Avoid clutter, fake currency counters, excessive gradients and copied commercial game UI.
+
+AQ. In-match HUD
+
+Design the in-match HUD for a landscape mobile cricket game using a fixed elevated behind-the-bowler camera. The central pitch and ball corridor must remain unobstructed. Place score/wickets, overs, striker/non-striker, bowler figures, target/required runs, connection status and pause in compact panels. Use clean broadcast-inspired typography, strong contrast, safe areas and subtle transparency. No large overlays across the ball path.
+
+AR. Batting controls
+
+Design touch controls for a skill-based cricket batting game. Keep shot-family buttons, front/back/advance/leave footwork and run/cancel actions separated into reachable thumb zones. Provide clear pressed/selected/disabled states, text labels plus icons and left-handed layout variant. Preserve a clear view of the incoming ball, striker and stumps. No tiny buttons or crowded joystick cluster.
+
+AS. Bowling controls
+
+Design touch controls for a cricket bowler: pace/effort, line, length, delivery type, movement direction/intensity, bowl action and field preset. Use a compact target preview and precise sliders or drag handles. Ensure the bowler can set a delivery with one thumb and confirm with another without hiding the pitch. Avoid complicated nested menus during a live match.
+
+AT. Timing and contact feedback
+
+Design a small timing feedback component with Early, Good, Perfect and Late states, plus a separate contact-quality label (Miss, Edge, Mistimed, Solid, Sweet Spot). Use shape, text and motion rather than color alone. It must not obscure the ball or guarantee a scoring result.
+
+AU. Scorecard and result screen
+
+Design a crisp cricket scorecard for a five-over innings: runs, wickets, overs, batter runs/balls, bowler overs/runs/wickets, extras, fall of wickets, over-by-over summary and match result. Use broadcast-style layout and clear mobile readability. Do not use ambiguous decimal over notation.
+
+AV. Matchmaking and reconnect states
+
+Design restrained matchmaking UI for quick 1v1 cricket: searching, opponent found, ready, connection quality, reconnecting, opponent disconnected and result states. Keep the tone sporty and calm. Provide useful action labels without exposing technical jargon.
+
+16.7 VFX / effects prompts
+
+AW. Ball trail and impact effects
+
+Create subtle, gameplay-readable cricket ball effects: short high-speed trail, seam glint, grass dust on bounce, small pitch dust on impact, restrained bat-contact impact cue and ground-roll grass interaction. Effects must not obscure the ball or exaggerate its path. Avoid fire, lightning, comic speed lines and oversized impact bursts.
+
+AX. Wicket impact effects
+
+Create restrained wicket effects for ball striking stumps: wood movement, bails lifting/flying, subtle dust and a short impact shake on the equipment only. The actual wicket is determined by collision/rules logic. No explosive effects or exaggerated debris.
+
+AY. Crowd reaction effects
+
+Create low-cost crowd reaction variants for dot ball, boundary, six, wicket and close appeal. Use broad group movement/lighting changes rather than individually simulated people. Keep the crowd secondary to the active pitch.
+
+16.8 Audio asset prompt
+
+AZ. Cricket sound pack
+
+Create an original, clean cricket sound effects pack recorded or synthesized for a realistic-stylized mobile cricket game: leather ball seam movement, ball release, pitch bounce by length/surface, bat sweet-spot contact, edge contact, toe contact, pad impact, stumps hit, bails falling, glove catch, ground pickup, throw, footsteps, running, slide, dive, umpire ambience and restrained crowd reactions. Deliver dry, loop-safe ambience and isolated effects with consistent loudness, no copyrighted commentary or recognizable broadcast samples.
+
+
+17. Rules, controls and player education
+
+17.1 First-match tutorial
+
+Teach one idea at a time:
+
+Watch the ball's release and bounce.
+
+Read line and length.
+
+Choose front/back foot.
+
+Select an appropriate shot.
+
+Time the swing.
+
+Observe contact result and shot direction.
+
+Call a run only after reading the field.
+
+As bowler, aim line and length, then vary pace or movement.
+
+17.2 Explainable outcome panel
+
+After a delivery, a compact optional detail view can display:
+
+Delivery type, pace, line and length.
+
+Batter footwork and chosen shot.
+
+Timing: early/good/perfect/late.
+
+Contact: middle/inside edge/outside edge/miss.
+
+Outcome: direction, runs, wicket or fielding result.
+
+This panel should teach players, not expose every hidden simulation coefficient during a competitive match.
+
+
+18. Telemetry and balancing
+
+Track events without collecting unnecessary personal information:
+
+Delivery settings and actual release outcome.
+
+Batter shot/footwork/timing input.
+
+Contact category and launch vector.
+
+Runs, wickets, extras, boundary and catch outcomes.
+
+Fielding reaction and pickup success.
+
+Connection latency, packet loss and reconciliation events.
+
+Device performance and frame rate bands.
+
+Balance metrics:
+
+Runs per over and average innings score.
+
+Distribution of dot/single/two/four/six/wicket.
+
+Dismissal types.
+
+Shot-family success by delivery line/length.
+
+Bowling variation usage and effectiveness.
+
+Run-out frequency and catch conversion.
+
+Win rate by latency band, device band and player skill band.
+
+Never balance by secretly changing a player's shot result after the contact calculation. Adjust the public physics/skill parameters and retest.
+
+
+19. Acceptance criteria
+
+The design is ready for production planning when all of the following can be demonstrated in a vertical-slice build by a future development team:
+
+Camera and presentation
+
+The fixed elevated behind-the-bowler camera matches the agreed composition.
+
+Both wickets, pitch, bowler, striker and incoming ball are readable during a delivery.
+
+No automatic live camera cut/rotation occurs.
+
+Ground, pitch, ball and stumps have convincing material identity and correct relative scale.
+
+Bowling and physics
+
+Bowler can vary speed, line, length and supported movement type.
+
+A delivery's actual line/length derives from release and target inputs.
+
+Flight and bounce respond to velocity, gravity, drag, spin/swing/seam and pitch contact.
+
+Yorker, good length, short ball and variations are meaningfully distinct.
+
+Front-foot no-ball and wide logic are rules-engine evaluated.
+
+Batting
+
+At least the core shot families have distinct swing paths and follow-throughs.
+
+Footwork changes contact position and shot suitability.
+
+Shot timing changes actual contact result.
+
+Direction emerges from bat face, bat path and contact point.
+
+Identical shot button presses against different deliveries can produce different outcomes for explainable reasons.
+
+A perfect timing label does not guarantee a boundary.
+
+Fielding and running
+
+Fielders move to intercept; they do not teleport.
+
+Catches use trajectory, reaction, reach and control state.
+
+Pickup, throw and wicket-break timing are simulated.
+
+Runs require crease completion by both batters.
+
+Run-outs and boundary saves are resolved from world-space positions and times.
+
+Rules and multiplayer
+
+Six legal balls per over; extras handled consistently.
+
+Five-over innings, role swap and target chase work correctly.
+
+Scorecard is correct for runs, wickets, extras and bowler figures.
+
+Server is authoritative for outcomes.
+
+Reconnect and opponent-disconnect paths have deterministic behavior.
+
+Match events can be reconstructed from replay data.
+
+Mobile UX
+
+Every critical action is possible through touch.
+
+Controls do not obscure the incoming ball or key wicket area.
+
+Left-handed and simplified control options exist.
+
+The game remains readable at common phone landscape sizes.
+
+
+20. Risks and mitigations
+
+Physics feels random: players cannot learn or trust outcomes. Mitigation: deterministic simulation, explainable contact model, replay and telemetry.
+
+Ball is too hard to see: timing becomes guesswork. Mitigation: contrast, scale, short trail, shadow cue and a clean ball corridor.
+
+Controls cover the pitch: mobile players lose information. Mitigation: safe thumb zones, adaptive layout and customizable controls.
+
+Animation and physics disagree: contact looks fake. Mitigation: shared event markers, actual bat/ball collision and animation blending.
+
+Multiplayer latency decides timing: competitive play feels unfair. Mitigation: bounded timestamp compensation, region-aware matchmaking and server replay.
+
+AI fielders feel omniscient: catches and boundaries feel predetermined. Mitigation: reaction delay, movement limits, visible route and skill envelopes.
+
+Attributes overpower player skill: pay-to-win perception. Mitigation: modest attribute contribution and ranked normalization.
+
+Scope becomes too large: release is delayed. Mitigation: stage features and focus on one excellent five-over 1v1 loop.
+
+
+21. Recommended production order (planning only)
+
+Design validation: camera, control maps, shot list, delivery taxonomy and ruleset.
+
+Simulation specification: coordinate space, ball state, contact windows, outcome model and event schema.
+
+Art bible: ground, pitch, ball, stumps, player rigs, uniforms, animation and UI consistency.
+
+Vertical-slice scope: one ground, two batter kits, two bowler actions, core shots, core deliveries, basic fielding and a complete ball lifecycle.
+
+Competitive multiplayer design: authoritative server, matchmaking, latency and reconnect.
+
+Rules completion: extras, dismissals, catches, run-outs, boundary and scorecard.
+
+Balance and accessibility: tuning, analytics, tutorials and mobile control testing.
+
+Content expansion: additional kits, grounds, ball colors, weather and modes.
+
+Do not create a large volume of cosmetic assets before validating the camera, ball scale, pitch proportions, shot readability and complete ball lifecycle.
+
+
+22. MASTER GAME DESIGN + WORLD + ASSET GENERATION PROMPT
+
+The following is the consolidated master prompt. It is intended to be supplied to a capable game-design, concept-art or production-planning model. It requests a complete design package and asset specifications, not code and not implementation.
+
+MASTER PROMPT (copy from here)
+
+You are the lead game director, senior cricket rules designer, gameplay systems designer, sports physicist, multiplayer systems architect, art director, character animator, UI/UX director and technical producer for an original mobile-first browser cricket game currently titled CREASE CLASH.
+
+Your task is to create a complete, internally consistent production blueprint for the game. Do not write code, do not build a prototype, do not generate executable project files and do not claim that anything has been implemented. This assignment is strictly for product requirements, game design, system architecture, rules, interaction design, asset planning and visual-generation prompts.
+
+A. Non-negotiable product identity
+
+Create a skill-based cricket simulation for mobile and desktop browsers. The core mode is real-time online 1v1 with five overs per innings. In the first innings one player bats and the other bowls; in the second innings the roles swap. AI controls fielders in the first release while the bowling player selects field presets and limited field adjustments. The game should feel like cricket, not a random arcade batting game.
+
+The supplied reference screenshot is the authoritative camera and on-field layout reference. LOCK the gameplay camera to an elevated, fixed, behind-the-bowler perspective, looking down the entire length of the pitch toward the striker. The pitch remains centered and vertical in the screen composition; the bowler is in the near foreground and striker at the far end. Keep both wickets, pitch markings, umpire, wicketkeeper, non-striker, relevant fielders, outfield and boundary readable. Do not change to side view, top-down or batter POV. Do not rotate, pan, zoom or cut the live gameplay camera during a ball. Preserve the reference's spatial composition and UI philosophy, but create a cleaner and more modern interface.
+
+The environment must look like a real cricket ground: believable green outfield, brown prepared pitch, worn batting areas, correct white crease markings, wooden stumps and bails, leather cricket ball with stitched seam, boundary rope/line and cricket field markings. These ground/equipment elements should feel grounded and detailed. Player models must be original fictional designs and must not copy the exact people, uniforms, logos or identities in the reference. Visual quality should be polished, lightweight 2.5D/3D, not demanding photorealistic AAA graphics. Optimize for mobile browser performance and ball readability.
+
+B. Absolute design principle
+
+Every result must be explainable by the simulation. No shot button guarantees a direction, four, six or wicket. A shot button selects intent; physical interaction resolves outcome. Timing, delivery line, length, speed, movement, bounce, footwork, bat path, bat face, contact position, body balance, ball velocity, fielding position and running decisions must all matter. The game may use tiny deterministic seeded variation for natural feel, but random chance must never dominate player skill.
+
+C. Specify the complete ball lifecycle
+
+Document and diagram every step: pre-delivery setup, bowler run-up, gather, front-foot landing, release, ball flight, swing/seam/spin, pitch impact, bounce, post-bounce flight, batter footwork, bat trigger, backswing, downswing, bat/ball collision, edge/miss/solid contact, launch direction, ball flight/roll, catch attempt or fielding pickup, throw, running call, crease arrival, run-out check, boundary check, dismissal/extras check, dead-ball state, score update and next delivery. Define state machine, event order, data needed at each stage and failure/edge cases.
+
+D. Build a coherent world-space physics specification
+
+Use world coordinates X across the pitch, Y along the pitch and Z height. Run simulation in world space; the locked camera is only a projection. Specify ball position, linear and angular velocity, gravity, air drag, spin, swing force, seam deflection, pitch restitution, friction, bounce, roll and collision response. Define line and length using continuous world-space target coordinates with readable cricket labels. Describe how speed, release point, line, length, variation, seam orientation, spin axis and surface wear change ball path. Specify a deterministic model and how small seeded variation is bounded. Explain how the ball remains visible at all times without moving the camera.
+
+E. Specify every bowling mechanic
+
+Cover fast, medium pace and spin bowling. Include stock seam-up, outswing, inswing, off-cutter, leg-cutter, slower ball, yorker, full ball, full toss, bouncer, off-break, leg-break, googly, top-spinner, slider and arm ball. For each define intended use, release/action cues, flight behavior, bounce behavior, pace trade-offs, control difficulty and batter counterplay. Define speed, line, length, movement intensity, release timing/accuracy, bowling action, handedness, stamina/consistency if used, front-foot no-ball and wide detection. Define bowler run-up, gather, delivery stride, wrist/finger release and follow-through animations. Ensure a variation changes physical parameters, not just its label or animation.
+
+F. Specify every batting mechanic and shot
+
+Define ready stance, trigger, front-foot, back-foot, advance/charge, stay balanced and leave. Cover forward defence, back-foot defence, straight drive, on drive, off drive, cover drive, square drive, cut, late cut, pull, hook, flick/glance, sweep, paddle sweep, lofted drive and lofted leg-side shot. Optional advanced shots may be proposed separately. For every shot specify ideal line/length, ideal footwork, bat path, swing plane, bat-face behavior, contact window, follow-through, scoring potential and dismissal risks. Explain what happens when the player selects the wrong shot for a delivery.
+
+G. Specify the complete bat-swing and contact system
+
+Treat the bat as a moving physical object, not a static button result. Define stance, backswing, weight transfer, hip/shoulder rotation, downswing acceleration, bat angular velocity, contact window, blade/edge/toe/sweet-spot contact regions, bat face, vertical contact position, follow-through and recovery. Define how early, good, perfect and late timing affect geometry. Timing windows must change with incoming speed, bounce, delivery movement, footwork and chosen stroke. Shot direction must be calculated from bat face, swing vector, contact offset and incoming ball velocity. Include miss, inside edge, outside edge, top edge, bottom edge, mistimed contact, soft contact, solid contact and sweet-spot contact. Explain how a perfect timing label can still produce an edge or catch when the shot selection/geometry is poor.
+
+H. Specify fielding, catching and wicketkeeping
+
+Define fielder starting positions, field presets, restrictions, reaction delay, acceleration, route selection, interception, ground pickup, bobble, throw, direct hit, catch reach, jump, dive, boundary awareness and recovery. Fielders must not teleport or know the future. Explain catch physics and the difference between clean catch, juggle then control, drop, fingertip deflection, parry and miss. Include one-handed, two-handed, low, overhead, running-back, forward dive and side dive catches. Define wicketkeeper crouch, standing take, take to either side, stumping and bails removal. Specify how ball trajectory and fielder skill, rather than random proximity, determine catches.
+
+I. Specify running between wickets
+
+Define RUN/YES, STOP/NO, second-run call, non-striker response, acceleration, sprint speed, turn radius, turn time, bat carry, grounding the bat, sliding/dive-to-crease, crease-arrival time, run completion and run-out checks at both ends. Both batters must be represented in world space. Explain how the fielding position, ball speed, pickup/throw time and player call affect the decision. Include single, two, three, short run, run-out and boundary-with-running cases. Design the mobile control layout so running is clear and does not overlap swing controls.
+
+J. Define cricket rules comprehensively
+
+Specify five-over innings, six legal balls per over, innings role swap, chase target and match tie. Define bowled, caught, LBW, run out, stumped and hit wicket; optional dismissals must be clearly marked as later scope. Define wide, no-ball, byes, leg byes and free hit under one consistent limited-overs ruleset. Define over notation, bowler figures, batter score, extras, fall of wickets and scorecard. Define four and six boundary logic, ground contact, ball crossing rope, fielder contact with boundary, catch at boundary, overthrow and running runs. Define LBW using predicted ball path and bat-before-pad precedence. Avoid contradictory cricket-law interpretations; state any simplified house rules transparently.
+
+K. Define UI/UX in detail
+
+Design main menu, matchmaking, ready/toss, field setup, in-match HUD, batting controls, bowling controls, timing feedback, result/scorecard, pause/settings, reconnect and tutorial. Use reference-inspired broadcast-style cricket UI with modern hierarchy and clear safe areas. The ball corridor and striker must never be hidden by buttons. Include left-handed control layout, simplified/advanced control presets, text plus icons, accessibility settings, sound/haptics and network indicator. Specify all control states and their visual feedback.
+
+L. Define multiplayer and technical architecture (without code)
+
+Specify client/server responsibilities, authoritative match service, matchmaking, room coordinator, rules engine, deterministic ball simulation, batting/fielding/running modules, replication, interpolation, prediction, reconciliation, latency compensation, reconnect, replay, telemetry and anti-cheat. Server must own score and outcome. Clients send intent inputs only; they cannot declare a six, wicket, catch or run. Define state machine, conceptual entities, event messages, tick strategy and security boundaries. Describe how a live ball resolves if one client disconnects.
+
+M. Produce a complete asset inventory and prompts
+
+Create a production asset list with unique IDs, asset type, purpose, camera/readability requirements, model/texture/rig/animation needs, LOD needs, variants, dependencies and priority. Include at minimum:
+
+Full ground/stadium environment and field perimeter.
+
+Grass, pitch, wear marks, crease markings and boundary material.
+
+Red, white and pink cricket balls with seam detail.
+
+Stumps, bails, bat, pads, gloves, helmet, shoes and umpire accessories.
+
+Batter, bowler, wicketkeeper, non-striker, umpire and multiple fielder characters.
+
+Shared humanoid rig and hand/prop attachment points.
+
+Bowler run-up, gather, delivery stride, release and follow-through for pace, swing, cutter and spin.
+
+Batter ready stance, front/back foot, advance, leave, defence, drive variants, cut, pull, hook, sweep, flick, loft, contact variants and recovery.
+
+Running yes/no, sprint, turn, slide, dive and bat grounding.
+
+Field pickup, bobble, throw, catch variants, dive, boundary save, wicketkeeper take/stumping.
+
+Umpire signals.
+
+Main menu, in-match HUD, batting/bowling controls, timing feedback, scorecard, matchmaking/reconnect and result UI.
+
+Ball trail, bounce dust, bat impact, stumps/bails, crowd reactions and sound pack.
+
+For each asset, write a production-ready visual prompt with camera angle, lighting, materials, proportions, palette, style consistency, animation/rig requirements and negative prompt. Separate isolated prop turntables from gameplay scene prompts. Do not put UI text into an asset image unless specifically requested. Do not copy commercial game assets, reference players or team logos.
+
+N. Provide sound design and feedback specification
+
+Include ball release, seam movement, pitch bounce by length, bat sweet spot, edges, toe, pad, stumps, bails, keeper gloves, catch, pickup, throw, running, slide, crowd, umpire and UI cues. Specify restrained mobile haptics and audio mixing priorities.
+
+O. Define game balance and telemetry
+
+Specify what should be measured: shot success by line/length, timing distribution, contact types, boundaries, wickets, catches, run-outs, delivery variation use, latency, reconnect and performance. Define balance metrics and guard against hidden outcome manipulation. Player skill ratings may influence execution precision modestly, but human decision and execution must dominate.
+
+P. Define first-release scope and future scope
+
+First release should prioritize one polished ground, one locked camera, one complete 5-over match loop, core bowling deliveries, core batting shots, full bat-ball interaction, basic AI fielding/catching, running/run-outs, rules, scorecard and real-time 1v1. List later features separately, including additional stadiums, weather, more advanced shots, manual fielding, AI opponents, tournaments and longer formats. Do not allow cosmetics or progression to delay the core ball lifecycle.
+
+Q. Deliverable structure
+
+Return the design package in this exact order:
+
+One-page executive summary.
+
+Product vision, pillars, audience and platform requirements.
+
+Locked camera and art direction.
+
+Full match flow and match-state diagram.
+
+Ball lifecycle and physics specification.
+
+Bowling mechanics and delivery matrix.
+
+Batting, footwork, shot and bat-swing specifications.
+
+Contact/outcome calculation model with tunable starting weights.
+
+Fielding, catching, wicketkeeping and boundary-save logic.
+
+Running mechanics and run-out logic.
+
+Complete rules and scoring reference.
+
+Player model, attribute and animation standards.
+
+Screen-by-screen UI/UX and control map.
+
+Real-time multiplayer/system architecture and anti-cheat.
+
+Full asset inventory with individual production prompts.
+
+Sound, haptics, accessibility and tutorial design.
+
+Telemetry, balance plan, acceptance criteria and risks.
+
+Prioritized release scope and production dependencies.
+
+A final condensed one-page creative brief for the entire game.
+
+Be concrete, exhaustive and internally consistent. Use tables and state diagrams when they add clarity. Separate locked decisions from proposed tuning values and open questions. Never invent a guaranteed scoring outcome. Do not write implementation code. Do not create a different camera. Do not turn the project into a graphics-heavy 3D spectacle. The output must be suitable for handing to a professional game development studio as the design source of truth.
+
+MASTER PROMPT (copy ends here)
+
+
+23. Decision register
+
+Locked decisions
+
+Mobile-first browser-playable cricket game.
+
+Real-time 1v1 as the primary online mode.
+
+Five overs per innings.
+
+Elevated, fixed behind-the-bowler camera based on the supplied screenshot.
+
+Realistic ground, pitch, ball, stumps, bails and boundary presentation.
+
+Original player models; no need to copy the reference players.
+
+Skill-based batting/bowling; no guaranteed direction or result per button.
+
+Design and architecture first; implementation is outside this document's scope.
+
+Proposed defaults for the first release
+
+AI-controlled fielders; bowling player selects field preset and limited adjustments.
+
+One standard limited-overs ruleset with clearly disclosed simplifications.
+
+Server-authoritative simulation and score.
+
+Daylight ground as the first environment.
+
+Landscape gameplay layout.
+
+Fixed camera with no live camera cuts or movement.
+
+Items to validate through design review / playtesting
+
+Final contact formula weights and timing windows.
+
+Exact pitch and ball physics coefficients.
+
+Simplified vs full LBW / no-ball rule edge cases.
+
+Number and type of available field presets.
+
+Run-call control layout on small phones.
+
+Whether ranked matches normalize player attributes completely.
+
+Final renderer/engine selection and server framework.
+
+
